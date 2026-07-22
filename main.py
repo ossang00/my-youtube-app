@@ -1,6 +1,9 @@
 import re
+from collections import Counter
+
 import streamlit as st
 import requests
+import plotly.express as px
 
 # 기본 설정
 st.set_page_config(page_title="유튜브 댓글 분석", page_icon="💬")
@@ -45,7 +48,6 @@ if st.button("댓글 가져오기 💬"):
             "key": YOUTUBE_KEY,
         }
         res = requests.get(api_url, params=params)
-
         if res.status_code != 200:
             st.error(
                 "댓글을 가져오지 못했어요 😢 댓글이 막힌 영상은 아닌지 확인해 주세요. "
@@ -69,3 +71,14 @@ if "comments" in st.session_state:
         {"좋아요": st.session_state.likes, "댓글": comments},
         use_container_width=True,
     )
+
+    # ── 2단계: 단어 빈도 분석 ──────────────────
+    words = " ".join(comments).split()          # 댓글 전체를 단어로 나누기
+    words = [w for w in words if len(w) > 1]    # 한 글자 단어 제외
+    top20 = Counter(words).most_common(20)      # 많이 나온 순서로 20개
+
+    st.subheader("📊 자주 나온 단어 TOP 20")
+    freq = {"단어": [w for w, _ in top20], "횟수": [n for _, n in top20]}
+    fig = px.bar(freq, x="횟수", y="단어", orientation="h")
+    fig.update_layout(yaxis={"categoryorder": "total ascending"})
+    st.plotly_chart(fig, use_container_width=True)
